@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: inquiries
+    // Document ID: auto-generated
+    // Fields:
+    //   - first_name: string (required)
+    //   - last_name: string (required)
+    //   - email: string (required, email format)
+    //   - phone: string (optional)
+    //   - address: string (optional)
+    //   - message: string (required, max 5000 chars)
+    //   - inquiry_type: string (owner/tenant)
+    //   - request_type: string (optional)
+    //   - createdAt: timestamp (required)
+    //   - status: string (new/read/replied)
+    //
+    // Collection: users
+    // Document ID: userId
+    // Fields:
+    //   - email: string (required)
+    //   - role: string (admin/staff)
+    //   - displayName: string
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "mr.sold@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidInquiry(data) {
+      return data.keys().hasAll(['first_name', 'last_name', 'email', 'message', 'createdAt']) &&
+             data.first_name is string && data.first_name.size() < 100 &&
+             data.last_name is string && data.last_name.size() < 100 &&
+             isValidEmail(data.email) &&
+             data.message is string && data.message.size() < 5000 &&
+             data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /inquiries/{inquiryId} {
+      allow create: if isValidInquiry(request.resource.data);
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}

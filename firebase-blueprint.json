@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "A contact form submission from a property owner or tenant.",
+      "type": "object",
+      "properties": {
+        "first_name": { "type": "string", "description": "Sender's first name" },
+        "last_name": { "type": "string", "description": "Sender's last name" },
+        "email": { "type": "string", "format": "email", "description": "Sender's email address" },
+        "phone": { "type": "string", "description": "Sender's phone number" },
+        "address": { "type": "string", "description": "Property address related to the inquiry" },
+        "message": { "type": "string", "description": "The message content" },
+        "inquiry_type": { "type": "string", "enum": ["owner", "tenant"], "description": "Type of inquiry" },
+        "request_type": { "type": "string", "description": "Specific request type for tenants" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of submission" },
+        "status": { "type": "string", "enum": ["new", "read", "replied"], "description": "Processing status" }
+      },
+      "required": ["first_name", "last_name", "email", "message", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "A user of the application (admin or staff).",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "staff"] },
+        "displayName": { "type": "string" }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/inquiries/{inquiryId}": {
+      "schema": "Inquiry",
+      "description": "Collection of all contact and maintenance inquiries."
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and roles."
+    }
+  }
+}
